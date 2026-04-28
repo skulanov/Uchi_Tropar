@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тренажер Тропарей - Современное Приложение</title>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-red: #8b0000;
+            --primary-gold: #c5a059;
+            --primary-paper: #f4f1ea;
+            --primary-ink: #2c2925;
+            --accent-gold: #d4af37;
+            --accent-red: #a00000;
+            --background-light: #faf8f3;
+            --background-dark: #dcd7cc;
+            --text-primary: #2c2925;
+            --text-secondary: #5a5248;
+            --border-light: #e8e4dc;
+            --shadow-soft: 0 4px 20px rgba(0,0,0,0.08);
+            --shadow-medium: 0 8px 30px rgba(0,0,0,0.12);
+            --shadow-strong: 0 12px 40px rgba(0,0,0,0.16);
+            --gradient-gold: linear-gradient(135deg, #d4af37, #c5a059);
+            --gradient-red: linear-gradient(135deg, #8b0000, #a00000);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--background-light);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-header {
+            background: var(--gradient-red);
+            color: white;
+            padding: 1.5rem 0;
+            box-shadow: var(--shadow-medium);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+            opacity: 0.1;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-title {
+            font-family: 'EB Garamond', serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            text-align: center;
+            font-weight: 300;
+        }
+
+        .main-container {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Навигационные вкладки */
+        .nav-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background: white;
+            border-radius: 12px;
+            padding: 0.5rem;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            background: transparent;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .nav-tab:hover {
+            background: var(--background-light);
+            color: var(--text-primary);
+        }
+
+        .nav-tab.active {
+            background: var(--gradient-gold);
+            color: white;
+            border-color: var(--primary-gold);
+            box-shadow: var(--shadow-soft);
+        }
+
+        /* Карточки тропарей */
+        .tropar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .tropar-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid var(--border-light);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tropar-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-gold);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .tropar-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .tropar-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .tropar-title {
+            font-family: 'EB Garamond', serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-red);
+            margin-bottom: 0.5rem;
+        }
+
+        .tropar-glass {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tropar-preview {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .play-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--gradient-gold);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0.8;
+        }
+
+        .play-button:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        /* Экран тренировки */
+        .training-screen {
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid var(--border-light);
+        }
+
+        .training-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .training-title {
+            font-family: 'EB Garamond', serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-red);
+            margin: 0;
+        }
+
+        .training-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .audio-player {
+            background: var(--background-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-light);
+        }
+
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .audio-progress {
+            flex: 1;
+            height: 6px;
+            background: var(--border-light);
+            border-radius: 3px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .audio-progress-bar {
+            height: 100%;
+            background: var(--gradient-gold);
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        .audio-time {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            min-width: 40px;
+            text-align: center;
+        }
+
+        /* Контролы тренировки */
+        .training-controls {
+            background: var(--background-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-light);
+        }
+
+        .controls-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .difficulty-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .difficulty-btn {
+            padding: 0.5rem 1rem;
+            background: white;
+            border: 2px solid var(--border-light);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .difficulty-btn:hover {
+            border-color: var(--primary-gold);
+            color: var(--primary-gold);
+        }
+
+        .difficulty-btn.active {
+            background: var(--gradient-gold);
+            color: white;
+            border-color: var(--primary-gold);
+        }
+
+        .custom-difficulty {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .slider-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .difficulty-slider {
+            flex: 1;
+            height: 6px;
+            background: var(--border-light);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .difficulty-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--primary-gold);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: var(--shadow-soft);
+        }
+
+        /* Текст тропаря */
+        .tropar-text-display {
+            background: var(--background-light);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-light);
+            font-family: 'EB Garamond', serif;
+            font-size: 1.4rem;
+            line-height: 1.8;
+            text-align: center;
+            min-height: 200px;
+            position: relative;
+        }
+
+        .tropar-text-display.loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-light);
+            border-top: 4px solid var(--primary-gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden-word {
+            display: inline-block;
+            color: transparent;
+            background: linear-gradient(45deg, var(--primary-gold), var(--accent-gold));
+            background-clip: text;
+            -webkit-background-clip: text;
+            border-bottom: 2px solid var(--primary-gold);
+            margin: 0 1px;
+            user-select: none;
+            transition: all 0.3s ease;
+        }
+
+        .first-letter {
+            color: var(--primary-red);
+            font-weight: 700;
+            font-size: 1.1em;
+        }
+
+        /* Советы по запоминанию */
+        .memory-tips {
+            background: linear-gradient(135deg, #f8f6f0, #f4f1ea);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-light);
+            margin-bottom: 2rem;
+        }
+
+        .memory-tips-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-red);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .memory-tips-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .memory-tips-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .memory-tips-list li::before {
+            content: '✝';
+            position: absolute;
+            left: 0;
+            color: var(--primary-gold);
+            font-weight: bold;
+        }
+
+        /* Кнопки действий */
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--gradient-gold);
+            color: white;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text-primary);
+            border: 2px solid var(--border-light);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary-gold);
+            color: var(--primary-gold);
+        }
+
+        .btn-danger {
+            background: var(--gradient-red);
+            color: white;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .header-title {
+                font-size: 2rem;
+            }
+
+            .main-container {
+                padding: 1rem;
+            }
+
+            .training-screen {
+                padding: 1.5rem;
+            }
+
+            .tropar-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .training-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .tropar-text-display {
+                font-size: 1.2rem;
+                padding: 1.5rem;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+            }
+
+            .difficulty-selector {
+                justify-content: center;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-title {
+                font-size: 1.5rem;
+            }
+
+            .tropar-text-display {
+                font-size: 1.1rem;
+                padding: 1rem;
+            }
+
+            .training-screen {
+                padding: 1rem;
+            }
+        }
+
+        /* Скрытые элементы */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Анимации */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+
+        /* Скроллбар */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--background-light);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-gold);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-gold);
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <h1 class="header-title">Тренажер Церковных Тропарей</h1>
+            <p class="header-subtitle">Современное приложение для запоминания воскресных и праздничных тропарей</p>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Главный экран выбора -->
+        <div id="main-screen" class="screen fade-in">
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-category="resurrection">
+                    <i class="fas fa-sun"></i>
+                    Воскресные тропари
+                </button>
+                <button class="nav-tab" data-category="feasts">
+                    <i class="fas fa-star"></i>
+                    Двунадесятые праздники
+                </button>
+                <button class="nav-tab" data-category="random">
+                    <i class="fas fa-random"></i>
+                    Случайный тропарь
+                </button>
+            </div>
+
+            <div id="tropar-list" class="tropar-grid">
+                <!-- Список тропарей будет сгенерирован динамически -->
+            </div>
+        </div>
+
+        <!-- Экран тренировки -->
+        <div id="training-screen" class="screen hidden">
+            <div class="training-screen fade-in">
+                <div class="training-header">
+                    <div>
+                        <h2 id="current-tropar-title" class="training-title">Название тропаря</h2>
+                        <div id="current-tropar-glass" class="training-info">
+                            <i class="fas fa-music"></i>
+                            <span id="glass-info">Глас 1</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="backToList()">
+                        <i class="fas fa-arrow-left"></i>
+                        Назад к списку
+                    </button>
+                </div>
+
+                <!-- Аудио плеер -->
+                <div class="audio-player">
+                    <div class="audio-controls">
+                        <button id="play-btn" class="btn btn-primary" onclick="toggleAudio()">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <div class="audio-progress" onclick="seekAudio(event)">
+                            <div id="audio-progress-bar" class="audio-progress-bar"></div>
+                        </div>
+                        <span id="audio-time" class="audio-time">0:00 / 0:00</span>
+                    </div>
+                    <audio id="audio-player" preload="auto"></audio>
+                </div>
+
+                <!-- Контролы тренировки -->
+                <div class="training-controls">
+                    <div class="controls-title">
+                        <i class="fas fa-cog"></i>
+                        Настройки тренировки
+                    </div>
+                    
+                    <div class="difficulty-selector">
+                        <button class="difficulty-btn active" data-level="0">Полный текст</button>
+                        <button class="difficulty-btn" data-level="20">Легко (20%)</button>
+                        <button class="difficulty-btn" data-level="50">Средне (50%)</button>
+                        <button class="difficulty-btn" data-level="80">Сложно (80%)</button>
+                        <button class="difficulty-btn" data-level="100">Только буквы</button>
+                    </div>
+
+                    <div class="custom-difficulty">
+                        <label for="custom-slider">Своя сложность:</label>
+                        <div class="slider-container">
+                            <input type="range" id="custom-slider" class="difficulty-slider" min="0" max="100" value="50">
+                            <span id="slider-value">50%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Текст тропаря -->
+                <div id="tropar-text-display" class="tropar-text-display">
+                    <div class="loading-spinner"></div>
+                </div>
+
+                <!-- Советы по запоминанию -->
+                <div class="memory-tips">
+                    <div class="memory-tips-title">
+                        <i class="fas fa-lightbulb"></i>
+                        Советы по запоминанию
+                    </div>
+                    <ul id="memory-tips-list" class="memory-tips-list">
+                        <!-- Советы будут загружены динамически -->
+                    </ul>
+                </div>
+
+                <!-- Кнопки действий -->
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="regenerateText()">
+                        <i class="fas fa-refresh"></i>
+                        Перемешать слова
+                    </button>
+                    <button class="btn btn-secondary" onclick="showFullText()">
+                        <i class="fas fa-eye"></i>
+                        Показать текст
+                    </button>
+                    <button class="btn btn-danger" onclick="resetTraining()">
+                        <i class="fas fa-stop"></i>
+                        Завершить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
