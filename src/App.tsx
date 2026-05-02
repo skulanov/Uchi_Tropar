@@ -57,9 +57,9 @@ export default function App() {
     }
   }, [selectedId, view]);
 
-  const getDriveUrl = (fileId: string) => {
-    if (!fileId || fileId.length < 10) return '';
-    return `https://docs.google.com/uc?export=download&id=${fileId}`;
+  const getAudioUrl = (filename: string) => {
+    if (!filename) return '';
+    return `https://raw.githubusercontent.com/skulanov/Uchi_Tropar/main/audio/${filename}`;
   };
 
   const toggleAudio = () => {
@@ -138,42 +138,51 @@ export default function App() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="grid gap-6 py-6"
+              className="flex flex-col items-center gap-4 py-8 max-w-md mx-auto"
             >
-              <div className="grid md:grid-cols-2 gap-4">
-                {CATEGORIES.map((cat) => (
-                  <motion.button
-                    key={cat.id}
-                    onClick={() => {
-                      setSelectedCategory(cat);
-                      setView('list');
-                    }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="bg-white p-8 rounded-3xl border border-[#5A5A40]/10 shadow-sm text-left flex flex-col gap-4 group transition-all hover:shadow-xl hover:border-[#5A5A40]/30"
-                  >
-                    <div className="w-12 h-12 rounded-2xl bg-[#5A5A40]/5 flex items-center justify-center text-[#5A5A40]">
-                      <Sparkles size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold mb-1">{cat.title}</h3>
-                      <p className="text-sm text-[#5A5A40]/60 font-sans leading-relaxed">{cat.description}</p>
-                    </div>
-                  </motion.button>
-                ))}
-
+              {CATEGORIES.map((cat) => (
                 <motion.button
-                  onClick={handleRandom}
+                  key={cat.id}
+                  onClick={() => {
+                    setSelectedCategory(cat);
+                    setView('list');
+                  }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="md:col-span-2 bg-[#5A5A40] p-6 rounded-3xl text-white shadow-xl flex items-center justify-center gap-4 transition-all hover:brightness-110"
+                  className="w-full bg-white p-7 rounded-[2rem] border border-[#5A5A40]/10 shadow-sm text-left flex items-center gap-6 group transition-all hover:shadow-xl hover:border-[#5A5A40]/30"
                 >
-                  <Shuffle size={24} />
-                  <div className="text-left">
-                    <h3 className="text-lg font-bold">Случайный выбор</h3>
+                  <div className="w-14 h-14 rounded-2xl bg-[#5A5A40]/5 flex items-center justify-center text-[#5A5A40] shrink-0">
+                    <Sparkles size={28} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black italic">{cat.title}</h3>
+                    <p className="text-xs text-[#5A5A40]/50 font-sans tracking-wide">{cat.description}</p>
                   </div>
                 </motion.button>
-              </div>
+              ))}
+
+              <motion.button
+                onClick={handleRandom}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full bg-[#5A5A40] p-7 rounded-[2rem] text-white shadow-xl flex items-center gap-6 transition-all hover:brightness-110"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center shrink-0">
+                  <Shuffle size={28} />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-xl font-black italic">Случайный выбор</h3>
+                  <p className="text-xs opacity-60 font-sans tracking-wide">Проверка знаний вслепую</p>
+                </div>
+              </motion.button>
+              
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.3 }}
+                className="mt-8 text-[10px] uppercase tracking-[0.2em] font-sans font-bold text-[#5A5A40]"
+              >
+                by Dima Skulanov 2026
+              </motion.div>
             </motion.div>
           )}
 
@@ -276,7 +285,7 @@ export default function App() {
                     </div>
                     <audio 
                       ref={audioRef} 
-                      src={getDriveUrl(selectedTroparion.audio)} 
+                      src={getAudioUrl(selectedTroparion.audio)} 
                       key={selectedTroparion.audio}
                       preload="auto"
                     />

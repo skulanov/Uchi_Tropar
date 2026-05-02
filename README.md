@@ -1,20 +1,20 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Учи Тропарь - Инструкция по запуску
 
-# Run and deploy your AI Studio app
+Это приложение создано в Google AI Studio. 
 
-This contains everything you need to run your app locally.
+## Как запустить на GitHub Pages (бесплатно)
 
-View your app in AI Studio: https://ai.studio/apps/6e7dbe31-4a65-44f6-84cc-6f3bde02b06e
+1. Создайте репозиторий на GitHub.
+2. Загрузите в него все файлы из этого архива.
+3. Перейдите в **Settings -> Pages**.
+4. В пункте **Build and deployment** измените **Source** на **GitHub Actions**.
+5. Сайт соберется автоматически и будет доступен по ссылке, которую выдаст GitHub (обычно `https://your-username.github.io/your-repo-name/`).
 
-## Run Locally
+## Аудиофайлы
+Приложение настроено на чтение аудио из вашего репозитория: `https://github.com/skulanov/Uchi_Tropar/tree/main/audio`.
+Если вы измените структуру папок или название репозитория, проверьте функцию `getAudioUrl` в `src/App.tsx`.
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Разработка
+Для локального запуска:
+1. `npm install`
+2. `npm run dev`
