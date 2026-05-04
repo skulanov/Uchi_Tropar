@@ -1,0 +1,6 @@
+{
+  "name": "Учи Тропарь",
+  "description": "An interactive application for learning Orthodox troparia (hymns) with text, translations, and memorization tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
