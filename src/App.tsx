@@ -26,6 +26,7 @@ export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isRandomMode, setIsRandomMode] = useState(false);
+  const [usedRandomIds, setUsedRandomIds] = useState<string[]>([]);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -78,6 +79,7 @@ export default function App() {
       if (isRandomMode) {
         setView('categories');
         setIsRandomMode(false);
+        setUsedRandomIds([]); // Clear session when exiting random mode
       } else {
         setView('list');
       }
@@ -91,11 +93,28 @@ export default function App() {
 
   const handleRandom = () => {
     const all = [...TROPAR_DATA.resurrection, ...TROPAR_DATA.feasts];
-    const random = all[Math.floor(Math.random() * all.length)];
+    const available = all.filter(t => !usedRandomIds.includes(t.id));
+    
+    // If all are used, reset but keep the current one from being picked immediately if possible 
+    // though reset is simpler.
+    let pool = available.length > 0 ? available : all;
+    
+    // Safety check if total data is empty (unlikely)
+    if (pool.length === 0) return;
+
+    const random = pool[Math.floor(Math.random() * pool.length)];
+    
+    // Update used list
+    const newUsed = available.length > 0 ? [...usedRandomIds, random.id] : [random.id];
+    setUsedRandomIds(newUsed);
+    
     setSelectedId(random.id);
     setView('detail');
     setIsRandomMode(true);
     setMemLevel(4); // Start fully hidden
+    setProgress(0);
+    setIsPlaying(false);
+    if (audioRef.current) audioRef.current.pause();
   };
 
   const cycleMemLevel = () => {
@@ -308,6 +327,26 @@ export default function App() {
                   ))}
                 </ul>
               </div>
+
+              {/* Random Mode Actions */}
+              {isRandomMode && (
+                <div className="pt-6">
+                  <motion.button
+                    onClick={handleRandom}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full bg-[#5A5A40] p-6 rounded-3xl text-white shadow-xl flex items-center justify-center gap-4 transition-all hover:brightness-110"
+                  >
+                    <Shuffle size={24} />
+                    <span className="text-lg font-bold">Другой тропарь</span>
+                  </motion.button>
+                  {usedRandomIds.length === [...TROPAR_DATA.resurrection, ...TROPAR_DATA.feasts].length && (
+                    <p className="text-center text-[10px] uppercase tracking-widest text-[#5A5A40]/40 mt-4 font-sans font-bold">
+                      Все тропари просмотрены. Список обновлен.
+                    </p>
+                  )}
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
