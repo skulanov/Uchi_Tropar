@@ -6,7 +6,6 @@ import {
   Pause, 
   Eye, 
   ChevronRight, 
-  Info,
   ChevronLeft,
   X,
   Shuffle,
@@ -22,6 +21,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<TroparCategory | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [memLevel, setMemLevel] = useState(0); // 0-4
+  const [kondakMemLevel, setKondakMemLevel] = useState(0); // 0-4
   const [showSettings, setShowSettings] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -30,10 +30,14 @@ export default function App() {
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  const allChants = useMemo(() => {
+    return Object.values(TROPAR_DATA).flat();
+  }, []);
+
   const selectedTroparion = useMemo(() => {
     if (!selectedId) return null;
-    return [...TROPAR_DATA.resurrection, ...TROPAR_DATA.feasts].find(t => t.id === selectedId);
-  }, [selectedId]);
+    return allChants.find(t => t.id === selectedId);
+  }, [selectedId, allChants]);
 
   const filteredTroparia = useMemo(() => {
     if (!selectedCategory) return [];
@@ -85,6 +89,8 @@ export default function App() {
       }
       setIsPlaying(false);
       setProgress(0);
+      setMemLevel(0);
+      setKondakMemLevel(0);
       if (audioRef.current) audioRef.current.pause();
     } else if (view === 'list') {
       setView('categories');
@@ -92,12 +98,11 @@ export default function App() {
   };
 
   const handleRandom = () => {
-    const all = [...TROPAR_DATA.resurrection, ...TROPAR_DATA.feasts];
-    const available = all.filter(t => !usedRandomIds.includes(t.id));
+    const available = allChants.filter(t => !usedRandomIds.includes(t.id));
     
     // If all are used, reset but keep the current one from being picked immediately if possible 
     // though reset is simpler.
-    let pool = available.length > 0 ? available : all;
+    let pool = available.length > 0 ? available : allChants;
     
     // Safety check if total data is empty (unlikely)
     if (pool.length === 0) return;
@@ -112,6 +117,7 @@ export default function App() {
     setView('detail');
     setIsRandomMode(true);
     setMemLevel(4); // Start fully hidden
+    setKondakMemLevel(4);
     setProgress(0);
     setIsPlaying(false);
     if (audioRef.current) audioRef.current.pause();
@@ -124,6 +130,14 @@ export default function App() {
     } else {
       // Normal cycle: 0 -> 1 -> 2 -> 3 -> 4
       setMemLevel((prev) => (prev + 1) % 5);
+    }
+  };
+
+  const cycleKondakMemLevel = () => {
+    if (isRandomMode) {
+      setKondakMemLevel((prev) => (prev > 0 ? prev - 1 : 4));
+    } else {
+      setKondakMemLevel((prev) => (prev + 1) % 5);
     }
   };
 
@@ -230,6 +244,7 @@ export default function App() {
                       setSelectedId(t.id);
                       setView('detail');
                       setMemLevel(0);
+                      setKondakMemLevel(0);
                     }}
                     className="bg-white p-5 rounded-2xl border border-[#5A5A40]/5 shadow-sm text-left flex items-center justify-between group hover:border-[#5A5A40]/20 transition-all"
                   >
@@ -312,21 +327,38 @@ export default function App() {
                 )}
               </div>
 
-              {/* Tips Section */}
-              <div className="bg-[#5A5A40] text-white rounded-[2rem] p-8 space-y-6 shadow-xl">
-                <div className="flex items-center gap-3">
-                  <Info size={24} className="opacity-50" />
-                  <h4 className="text-sm font-bold uppercase tracking-widest">Советы по заучиванию</h4>
+              {/* Separate Kontakion Card for Feasts */}
+              {selectedTroparion.kondak && (
+                <div className="pt-4">
+                  <div className="flex items-center justify-end mb-4">
+                    <div className="flex bg-[#5A5A40]/5 rounded-full p-1 border border-[#5A5A40]/10">
+                      <button 
+                        onClick={cycleKondakMemLevel}
+                        className={`flex items-center gap-2 px-6 py-2 rounded-full font-sans text-xs font-bold uppercase tracking-widest transition-all ${
+                          kondakMemLevel > 0 
+                          ? 'bg-[#5A5A40] text-white shadow-lg' 
+                          : 'text-[#5A5A40] hover:bg-[#5A5A40]/10 border border-[#5A5A40]/20'
+                        }`}
+                      >
+                        <Eye size={16} /> УЧИТЬ (Ур.{kondakMemLevel})
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-[2.5rem] p-8 md:p-14 border border-[#5A5A40]/5 relative shadow-sm">
+                    <div className="text-center space-y-3 mb-10">
+                      <span className="text-[10px] font-sans font-bold uppercase tracking-[0.25em] text-[#5A5A40]/40 block">
+                        {selectedTroparion.kondak.glass}
+                      </span>
+                      <h2 className="text-3xl md:text-4xl font-black italic">Кондак</h2>
+                    </div>
+
+                    <div className="text-center text-2xl md:text-3xl leading-[1.6] space-y-4">
+                      {renderTextWithLevel(selectedTroparion.kondak.text, kondakMemLevel)}
+                    </div>
+                  </div>
                 </div>
-                <ul className="space-y-4 list-none">
-                  {selectedTroparion.tips.map((tip, i) => (
-                    <li key={i} className="flex gap-4 items-start">
-                      <span className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center shrink-0 text-xs font-bold">{i + 1}</span>
-                      <p className="text-sm opacity-90 leading-relaxed italic">{tip}</p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              )}
 
               {/* Random Mode Actions */}
               {isRandomMode && (
@@ -340,9 +372,9 @@ export default function App() {
                     <Shuffle size={24} />
                     <span className="text-lg font-bold">Другой тропарь</span>
                   </motion.button>
-                  {usedRandomIds.length === [...TROPAR_DATA.resurrection, ...TROPAR_DATA.feasts].length && (
+                  {usedRandomIds.length === allChants.length && (
                     <p className="text-center text-[10px] uppercase tracking-widest text-[#5A5A40]/40 mt-4 font-sans font-bold">
-                      Все тропари просмотрены. Список обновлен.
+                      Все тексты просмотрены. Список обновлен.
                     </p>
                   )}
                 </div>
