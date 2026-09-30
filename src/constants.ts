@@ -293,8 +293,8 @@ export const CATEGORIES: TroparCategory[] = [
   },
   {
     id: 'feasts',
-    title: 'Тропари и кондаки двунадесятых праздников',
-    description: 'Двенадцать великих праздников',
+    title: 'Праздники',
+    description: 'Тропари и кондаки двунадесятых праздников',
     items: TROPAR_DATA.feasts
   }
 ];
