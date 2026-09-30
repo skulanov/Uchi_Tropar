@@ -1,18 +1,16 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   Book, 
-  Settings, 
   Play, 
   Pause, 
   Eye, 
   ChevronRight, 
   ChevronLeft,
-  X,
   Shuffle,
   Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { TROPAR_DATA, CATEGORIES, Troparion, TroparCategory } from './constants';
+import { TROPAR_DATA, CATEGORIES, TroparCategory } from './constants';
 
 type ViewState = 'categories' | 'list' | 'detail';
 
@@ -22,7 +20,6 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [memLevel, setMemLevel] = useState(0); // 0-4
   const [kondakMemLevel, setKondakMemLevel] = useState(0); // 0-4
-  const [showSettings, setShowSettings] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isRandomMode, setIsRandomMode] = useState(false);
@@ -145,7 +142,7 @@ export default function App() {
     <div className="min-h-screen bg-[#FDFCFB] text-[#1A1A1A] font-serif selection:bg-[#5A5A40] selection:text-white">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-[#FDFCFB]/90 backdrop-blur-md border-b border-[#5A5A40]/10 px-4 py-4 md:px-8">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+        <div className="max-w-4xl mx-auto flex items-center">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('categories')}>
             <div className="w-10 h-10 rounded-full bg-[#5A5A40] flex items-center justify-center text-white shadow-lg shadow-[#5A5A40]/20">
               <Book size={22} strokeWidth={2.5} />
@@ -154,12 +151,6 @@ export default function App() {
               <h1 className="text-xl font-bold tracking-tight">Учи Тропарь</h1>
             </div>
           </div>
-          <button 
-            onClick={() => setShowSettings(true)}
-            className="p-2 hover:bg-[#5A5A40]/5 rounded-full transition-colors text-[#5A5A40]"
-          >
-            <Settings size={22} />
-          </button>
         </div>
       </header>
 
@@ -383,48 +374,6 @@ export default function App() {
           )}
         </AnimatePresence>
       </main>
-
-      {/* Settings Modal */}
-      <AnimatePresence>
-        {showSettings && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowSettings(false)}
-              className="absolute inset-0 bg-[#000]/40 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl relative z-10 p-10 border border-[#5A5A40]/10"
-            >
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-bold">О проекте</h2>
-                <button onClick={() => setShowSettings(false)} className="p-2 hover:bg-gray-100 rounded-full"><X size={24} /></button>
-              </div>
-              <div className="space-y-6 font-sans text-sm">
-                <div className="bg-[#5A5A40]/5 p-5 rounded-2xl">
-                  <h4 className="font-bold uppercase tracking-widest text-[10px] text-[#5A5A40]/40 mb-2">Версия</h4>
-                  <p className="font-bold text-[#5A5A40]">1.2.0 "Голос"</p>
-                </div>
-                <div className="p-2 leading-relaxed">
-                  <p className="mb-4 text-gray-600">Это приложение создано для помощи верующим в изучении богослужебных текстов. Использование режима "Учить" помогает эффективно запомнить структуру и смысл каждого тропаря.</p>
-                  <p className="italic text-[#5A5A40]">Молитвенной помощи всем учащимся!</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowSettings(false)}
-                className="w-full mt-10 bg-[#5A5A40] text-white py-4 rounded-2xl font-sans font-bold shadow-lg"
-              >
-                Вернуться к обучению
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
