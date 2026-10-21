@@ -35,13 +35,15 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [memLevel, setMemLevel] = useState(0); // 0-4
   const [kondakMemLevel, setKondakMemLevel] = useState(0); // 0-4
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [playingTrack, setPlayingTrack] = useState<'tropar' | 'kondak' | null>(null);
   const [progress, setProgress] = useState(0);
+  const [kondakProgress, setKondakProgress] = useState(0);
   const [isRandomMode, setIsRandomMode] = useState(false);
   const [usedRandomIds, setUsedRandomIds] = useState<string[]>([]);
   const [slideDirection, setSlideDirection] = useState<number>(0);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const kondakAudioRef = useRef<HTMLAudioElement | null>(null);
   const lastNavTime = useRef<number>(0);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -74,13 +76,18 @@ export default function App() {
   const navigateToItem = (id: string, dir: number) => {
     setSlideDirection(dir);
     setSelectedId(id);
-    setIsPlaying(false);
+    setPlayingTrack(null);
     setProgress(0);
+    setKondakProgress(0);
     setMemLevel(isRandomMode ? 4 : 0);
     setKondakMemLevel(isRandomMode ? 4 : 0);
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
+    }
+    if (kondakAudioRef.current) {
+      kondakAudioRef.current.pause();
+      kondakAudioRef.current.currentTime = 0;
     }
   };
 
@@ -141,7 +148,7 @@ export default function App() {
     }
   };
 
-  // Audio Logic
+  // Troparion Audio Logic
   useEffect(() => {
     const audio = audioRef.current;
     if (audio) {
@@ -150,11 +157,37 @@ export default function App() {
           setProgress((audio.currentTime / audio.duration) * 100);
         }
       };
+      const onEnded = () => {
+        setPlayingTrack(prev => (prev === 'tropar' ? null : prev));
+        setProgress(0);
+      };
       audio.addEventListener('timeupdate', updateProgress);
-      audio.addEventListener('ended', () => setIsPlaying(false));
+      audio.addEventListener('ended', onEnded);
       return () => {
         audio.removeEventListener('timeupdate', updateProgress);
-        audio.removeEventListener('ended', () => setIsPlaying(false));
+        audio.removeEventListener('ended', onEnded);
+      };
+    }
+  }, [selectedId, view]);
+
+  // Kontakion Audio Logic
+  useEffect(() => {
+    const audio = kondakAudioRef.current;
+    if (audio) {
+      const updateKondakProgress = () => {
+        if (audio.duration) {
+          setKondakProgress((audio.currentTime / audio.duration) * 100);
+        }
+      };
+      const onKondakEnded = () => {
+        setPlayingTrack(prev => (prev === 'kondak' ? null : prev));
+        setKondakProgress(0);
+      };
+      audio.addEventListener('timeupdate', updateKondakProgress);
+      audio.addEventListener('ended', onKondakEnded);
+      return () => {
+        audio.removeEventListener('timeupdate', updateKondakProgress);
+        audio.removeEventListener('ended', onKondakEnded);
       };
     }
   }, [selectedId, view]);
@@ -164,14 +197,33 @@ export default function App() {
     return `https://raw.githubusercontent.com/skulanov/Uchi_Tropar/main/audio/${filename}`;
   };
 
-  const toggleAudio = () => {
+  const toggleTroparAudio = () => {
+    if (kondakAudioRef.current) {
+      kondakAudioRef.current.pause();
+    }
     if (audioRef.current) {
-      if (isPlaying) {
+      if (playingTrack === 'tropar') {
         audioRef.current.pause();
+        setPlayingTrack(null);
       } else {
         audioRef.current.play().catch(e => console.error("Audio error:", e));
+        setPlayingTrack('tropar');
       }
-      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const toggleKondakAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    if (kondakAudioRef.current) {
+      if (playingTrack === 'kondak') {
+        kondakAudioRef.current.pause();
+        setPlayingTrack(null);
+      } else {
+        kondakAudioRef.current.play().catch(e => console.error("Audio error:", e));
+        setPlayingTrack('kondak');
+      }
     }
   };
 
@@ -184,11 +236,13 @@ export default function App() {
       } else {
         setView('list');
       }
-      setIsPlaying(false);
+      setPlayingTrack(null);
       setProgress(0);
+      setKondakProgress(0);
       setMemLevel(0);
       setKondakMemLevel(0);
       if (audioRef.current) audioRef.current.pause();
+      if (kondakAudioRef.current) kondakAudioRef.current.pause();
     } else if (view === 'list') {
       setView('categories');
     }
@@ -210,14 +264,17 @@ export default function App() {
     const newUsed = available.length > 0 ? [...usedRandomIds, random.id] : [random.id];
     setUsedRandomIds(newUsed);
     
+    setSlideDirection(1);
     setSelectedId(random.id);
     setView('detail');
     setIsRandomMode(true);
     setMemLevel(4); // Start fully hidden
     setKondakMemLevel(4);
     setProgress(0);
-    setIsPlaying(false);
+    setKondakProgress(0);
+    setPlayingTrack(null);
     if (audioRef.current) audioRef.current.pause();
+    if (kondakAudioRef.current) kondakAudioRef.current.pause();
   };
 
   const cycleMemLevel = () => {
@@ -447,10 +504,10 @@ export default function App() {
                         <div className="mt-14 pt-10 border-t border-[#5A5A40]/5 flex flex-col items-center gap-6">
                           <div className="flex items-center gap-6">
                             <button 
-                              onClick={toggleAudio}
+                              onClick={toggleTroparAudio}
                               className="w-16 h-16 rounded-full bg-[#5A5A40] text-white flex items-center justify-center hover:scale-110 transition-all shadow-xl active:scale-95"
                             >
-                              {isPlaying ? <Pause size={28} /> : <Play size={28} className="ml-1" />}
+                              {playingTrack === 'tropar' ? <Pause size={28} /> : <Play size={28} className="ml-1" />}
                             </button>
                           </div>
                           <div className="w-full max-w-sm h-1.5 bg-[#5A5A40]/10 rounded-full overflow-hidden">
@@ -499,6 +556,33 @@ export default function App() {
                           <div className="text-center text-2xl md:text-3xl leading-[1.6] space-y-4">
                             {renderTextWithLevel(selectedTroparion.kondak.text, kondakMemLevel)}
                           </div>
+
+                          {/* Kontakion Audio Player */}
+                          {selectedTroparion.kondak.audio && (
+                            <div className="mt-14 pt-10 border-t border-[#5A5A40]/5 flex flex-col items-center gap-6">
+                              <div className="flex items-center gap-6">
+                                <button 
+                                  onClick={toggleKondakAudio}
+                                  className="w-16 h-16 rounded-full bg-[#5A5A40] text-white flex items-center justify-center hover:scale-110 transition-all shadow-xl active:scale-95"
+                                >
+                                  {playingTrack === 'kondak' ? <Pause size={28} /> : <Play size={28} className="ml-1" />}
+                                </button>
+                              </div>
+                              <div className="w-full max-w-sm h-1.5 bg-[#5A5A40]/10 rounded-full overflow-hidden">
+                                <motion.div 
+                                  className="h-full bg-[#5A5A40]" 
+                                  animate={{ width: `${kondakProgress}%` }}
+                                  transition={{ type: 'spring', bounce: 0, duration: 0.2 }}
+                                />
+                              </div>
+                              <audio 
+                                ref={kondakAudioRef} 
+                                src={getAudioUrl(selectedTroparion.kondak.audio)} 
+                                key={selectedTroparion.kondak.audio}
+                                preload="auto"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
