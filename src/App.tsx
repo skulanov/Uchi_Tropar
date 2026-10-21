@@ -14,6 +14,21 @@ import { TROPAR_DATA, CATEGORIES, TroparCategory } from './constants';
 
 type ViewState = 'categories' | 'list' | 'detail';
 
+const cardVariants = {
+  enter: (dir: number) => ({
+    x: dir > 0 ? 70 : dir < 0 ? -70 : 0,
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  exit: (dir: number) => ({
+    x: dir > 0 ? -70 : dir < 0 ? 70 : 0,
+    opacity: 0,
+  }),
+};
+
 export default function App() {
   const [view, setView] = useState<ViewState>('categories');
   const [selectedCategory, setSelectedCategory] = useState<TroparCategory | null>(null);
@@ -24,8 +39,12 @@ export default function App() {
   const [progress, setProgress] = useState(0);
   const [isRandomMode, setIsRandomMode] = useState(false);
   const [usedRandomIds, setUsedRandomIds] = useState<string[]>([]);
+  const [slideDirection, setSlideDirection] = useState<number>(0);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const lastNavTime = useRef<number>(0);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
 
   const allChants = useMemo(() => {
     return Object.values(TROPAR_DATA).flat();
@@ -36,10 +55,91 @@ export default function App() {
     return allChants.find(t => t.id === selectedId);
   }, [selectedId, allChants]);
 
+  const currentList = useMemo(() => {
+    if (selectedCategory) return selectedCategory.items;
+    const foundCat = CATEGORIES.find(cat => cat.items.some(item => item.id === selectedId));
+    return foundCat ? foundCat.items : allChants;
+  }, [selectedCategory, selectedId, allChants]);
+
+  const currentIndex = useMemo(() => {
+    if (!selectedId) return -1;
+    return currentList.findIndex(t => t.id === selectedId);
+  }, [currentList, selectedId]);
+
   const filteredTroparia = useMemo(() => {
     if (!selectedCategory) return [];
     return selectedCategory.items;
   }, [selectedCategory]);
+
+  const navigateToItem = (id: string, dir: number) => {
+    setSlideDirection(dir);
+    setSelectedId(id);
+    setIsPlaying(false);
+    setProgress(0);
+    setMemLevel(isRandomMode ? 4 : 0);
+    setKondakMemLevel(isRandomMode ? 4 : 0);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  };
+
+  const goToPrev = () => {
+    if (currentList.length <= 1 || currentIndex === -1) return;
+    const now = Date.now();
+    if (now - lastNavTime.current < 250) return;
+    lastNavTime.current = now;
+
+    const prevIndex = currentIndex > 0 ? currentIndex - 1 : currentList.length - 1;
+    navigateToItem(currentList[prevIndex].id, -1);
+  };
+
+  const goToNext = () => {
+    if (currentList.length <= 1 || currentIndex === -1) return;
+    const now = Date.now();
+    if (now - lastNavTime.current < 250) return;
+    lastNavTime.current = now;
+
+    const nextIndex = currentIndex < currentList.length - 1 ? currentIndex + 1 : 0;
+    navigateToItem(currentList[nextIndex].id, 1);
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (view !== 'detail') return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === 'ArrowLeft') {
+        goToPrev();
+      } else if (e.key === 'ArrowRight') {
+        goToNext();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [view, currentIndex, currentList]);
+
+  // Touch swipe handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+
+    if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.3) {
+      if (deltaX > 0) {
+        goToPrev();
+      } else {
+        goToNext();
+      }
+    }
+  };
 
   // Audio Logic
   useEffect(() => {
@@ -232,6 +332,7 @@ export default function App() {
                   <motion.button
                     key={t.id}
                     onClick={() => {
+                      setSlideDirection(0);
                       setSelectedId(t.id);
                       setView('detail');
                       setMemLevel(0);
@@ -255,21 +356,50 @@ export default function App() {
           )}
 
           {view === 'detail' && selectedTroparion && (
-            <motion.div
-              key="detail"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
+            <div 
+              key="detail-container" 
               className="space-y-6 pb-24"
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
             >
-              <div className="flex items-center justify-between mb-4">
-                <button onClick={handleBack} className="flex items-center gap-2 text-[#5A5A40] font-sans font-bold text-sm uppercase tracking-wider">
+              {/* Top Navigation Bar with Back, Pager, and Learn Button */}
+              <div className="flex items-center justify-between mb-4 gap-2">
+                <button 
+                  onClick={handleBack} 
+                  className="flex items-center gap-1.5 text-[#5A5A40] font-sans font-bold text-sm uppercase tracking-wider hover:opacity-80 transition-opacity shrink-0"
+                >
                   <ChevronLeft size={18} /> Назад
                 </button>
-                <div className="flex bg-[#5A5A40]/5 rounded-full p-1 border border-[#5A5A40]/10">
+
+                {/* Pager / Prev-Next Controls */}
+                {currentList.length > 1 && (
+                  <div className="flex items-center gap-1 text-xs font-sans font-bold text-[#5A5A40] bg-[#5A5A40]/5 px-2.5 py-1.5 rounded-full border border-[#5A5A40]/10 shadow-sm">
+                    <button 
+                      onClick={goToPrev} 
+                      aria-label="Предыдущий"
+                      title="Предыдущий (смахните вправо или клавиша ←)"
+                      className="p-1 hover:bg-[#5A5A40]/10 rounded-full transition-colors active:scale-90"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <span className="px-1.5 text-[11px] font-mono tracking-wider">
+                      {currentIndex + 1} / {currentList.length}
+                    </span>
+                    <button 
+                      onClick={goToNext} 
+                      aria-label="Следующий"
+                      title="Следующий (смахните влево или клавиша →)"
+                      className="p-1 hover:bg-[#5A5A40]/10 rounded-full transition-colors active:scale-90"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex bg-[#5A5A40]/5 rounded-full p-1 border border-[#5A5A40]/10 shrink-0">
                   <button 
                     onClick={cycleMemLevel}
-                    className={`flex items-center gap-2 px-6 py-2 rounded-full font-sans text-xs font-bold uppercase tracking-widest transition-all ${
+                    className={`flex items-center gap-2 px-5 py-2 rounded-full font-sans text-xs font-bold uppercase tracking-widest transition-all ${
                       memLevel > 0 
                       ? 'bg-[#5A5A40] text-white shadow-lg' 
                       : 'text-[#5A5A40] hover:bg-[#5A5A40]/10 border border-[#5A5A40]/20'
@@ -280,97 +410,168 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-[2.5rem] p-8 md:p-14 border border-[#5A5A40]/5 relative shadow-sm">
-                <div className="text-center space-y-3 mb-10">
-                  <span className="text-[10px] font-sans font-bold uppercase tracking-[0.25em] text-[#5A5A40]/40">{selectedTroparion.glass}</span>
-                  <h2 className="text-3xl md:text-4xl font-black italic">{selectedTroparion.title}</h2>
-                </div>
-
-                <div className="text-center text-2xl md:text-3xl leading-[1.6] space-y-4">
-                  {renderTextWithLevel(selectedTroparion.text, memLevel)}
-                </div>
-
-                {/* Audio Minimal Player */}
-                {selectedTroparion.audio && (
-                  <div className="mt-14 pt-10 border-t border-[#5A5A40]/5 flex flex-col items-center gap-6">
-                    <div className="flex items-center gap-6">
-                      <button 
-                        onClick={toggleAudio}
-                        className="w-16 h-16 rounded-full bg-[#5A5A40] text-white flex items-center justify-center hover:scale-110 transition-all shadow-xl active:scale-95"
-                      >
-                        {isPlaying ? <Pause size={28} /> : <Play size={28} className="ml-1" />}
-                      </button>
-                    </div>
-                    <div className="w-full max-w-sm h-1.5 bg-[#5A5A40]/10 rounded-full overflow-hidden">
-                      <motion.div 
-                        className="h-full bg-[#5A5A40]" 
-                        animate={{ width: `${progress}%` }}
-                        transition={{ type: 'spring', bounce: 0, duration: 0.2 }}
-                      />
-                    </div>
-                    <audio 
-                      ref={audioRef} 
-                      src={getAudioUrl(selectedTroparion.audio)} 
-                      key={selectedTroparion.audio}
-                      preload="auto"
-                    />
-                  </div>
+              {/* Main Card with Swipe Support & Slide Transitions */}
+              <div className="relative">
+                {/* Desktop floating navigation arrows */}
+                {currentList.length > 1 && (
+                  <>
+                    <button
+                      onClick={goToPrev}
+                      aria-label="Предыдущий"
+                      title="Предыдущий"
+                      className="hidden md:flex absolute -left-14 top-1/3 -translate-y-1/2 w-11 h-11 rounded-full bg-white text-[#5A5A40] shadow-md border border-[#5A5A40]/10 items-center justify-center transition-all hover:scale-110 active:scale-95 z-20 hover:bg-[#FDFCFB]"
+                    >
+                      <ChevronLeft size={22} />
+                    </button>
+                    <button
+                      onClick={goToNext}
+                      aria-label="Следующий"
+                      title="Следующий"
+                      className="hidden md:flex absolute -right-14 top-1/3 -translate-y-1/2 w-11 h-11 rounded-full bg-white text-[#5A5A40] shadow-md border border-[#5A5A40]/10 items-center justify-center transition-all hover:scale-110 active:scale-95 z-20 hover:bg-[#FDFCFB]"
+                    >
+                      <ChevronRight size={22} />
+                    </button>
+                  </>
                 )}
-              </div>
 
-              {/* Separate Kontakion Card for Feasts */}
-              {selectedTroparion.kondak && (
-                <div className="pt-4">
-                  <div className="flex items-center justify-end mb-4">
-                    <div className="flex bg-[#5A5A40]/5 rounded-full p-1 border border-[#5A5A40]/10">
-                      <button 
-                        onClick={cycleKondakMemLevel}
-                        className={`flex items-center gap-2 px-6 py-2 rounded-full font-sans text-xs font-bold uppercase tracking-widest transition-all ${
-                          kondakMemLevel > 0 
-                          ? 'bg-[#5A5A40] text-white shadow-lg' 
-                          : 'text-[#5A5A40] hover:bg-[#5A5A40]/10 border border-[#5A5A40]/20'
-                        }`}
-                      >
-                        <Eye size={16} /> УЧИТЬ (Ур.{kondakMemLevel})
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-[2.5rem] p-8 md:p-14 border border-[#5A5A40]/5 relative shadow-sm">
-                    <div className="text-center space-y-3 mb-10">
-                      <span className="text-[10px] font-sans font-bold uppercase tracking-[0.25em] text-[#5A5A40]/40 block">
-                        {selectedTroparion.kondak.glass}
-                      </span>
-                      <h2 className="text-3xl md:text-4xl font-black italic">Кондак</h2>
-                    </div>
-
-                    <div className="text-center text-2xl md:text-3xl leading-[1.6] space-y-4">
-                      {renderTextWithLevel(selectedTroparion.kondak.text, kondakMemLevel)}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Random Mode Actions */}
-              {isRandomMode && (
-                <div className="pt-6">
-                  <motion.button
-                    onClick={handleRandom}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full bg-[#5A5A40] p-6 rounded-3xl text-white shadow-xl flex items-center justify-center gap-4 transition-all hover:brightness-110"
+                <AnimatePresence mode="wait" custom={slideDirection}>
+                  <motion.div
+                    key={selectedTroparion.id}
+                    custom={slideDirection}
+                    variants={cardVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ duration: 0.22, ease: 'easeOut' }}
+                    drag="x"
+                    dragDirectionLock
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.12}
+                    onDragEnd={(_e, info) => {
+                      const swipeThreshold = 50;
+                      if (info.offset.x > swipeThreshold || info.velocity.x > 350) {
+                        goToPrev();
+                      } else if (info.offset.x < -swipeThreshold || info.velocity.x < -350) {
+                        goToNext();
+                      }
+                    }}
+                    className="space-y-6 touch-pan-y"
                   >
-                    <Shuffle size={24} />
-                    <span className="text-lg font-bold">Другой тропарь</span>
-                  </motion.button>
-                  {usedRandomIds.length === allChants.length && (
-                    <p className="text-center text-[10px] uppercase tracking-widest text-[#5A5A40]/40 mt-4 font-sans font-bold">
-                      Все тексты просмотрены. Список обновлен.
-                    </p>
-                  )}
-                </div>
-              )}
-            </motion.div>
+                    <div className="bg-white rounded-[2.5rem] p-8 md:p-14 border border-[#5A5A40]/5 relative shadow-sm">
+                      <div className="text-center space-y-3 mb-10">
+                        <span className="text-[10px] font-sans font-bold uppercase tracking-[0.25em] text-[#5A5A40]/40">{selectedTroparion.glass}</span>
+                        <h2 className="text-3xl md:text-4xl font-black italic">{selectedTroparion.title}</h2>
+                      </div>
+
+                      <div className="text-center text-2xl md:text-3xl leading-[1.6] space-y-4">
+                        {renderTextWithLevel(selectedTroparion.text, memLevel)}
+                      </div>
+
+                      {/* Audio Minimal Player */}
+                      {selectedTroparion.audio && (
+                        <div className="mt-14 pt-10 border-t border-[#5A5A40]/5 flex flex-col items-center gap-6">
+                          <div className="flex items-center gap-6">
+                            <button 
+                              onClick={toggleAudio}
+                              className="w-16 h-16 rounded-full bg-[#5A5A40] text-white flex items-center justify-center hover:scale-110 transition-all shadow-xl active:scale-95"
+                            >
+                              {isPlaying ? <Pause size={28} /> : <Play size={28} className="ml-1" />}
+                            </button>
+                          </div>
+                          <div className="w-full max-w-sm h-1.5 bg-[#5A5A40]/10 rounded-full overflow-hidden">
+                            <motion.div 
+                              className="h-full bg-[#5A5A40]" 
+                              animate={{ width: `${progress}%` }}
+                              transition={{ type: 'spring', bounce: 0, duration: 0.2 }}
+                            />
+                          </div>
+                          <audio 
+                            ref={audioRef} 
+                            src={getAudioUrl(selectedTroparion.audio)} 
+                            key={selectedTroparion.audio}
+                            preload="auto"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Separate Kontakion Card for Feasts */}
+                    {selectedTroparion.kondak && (
+                      <div className="pt-4">
+                        <div className="flex items-center justify-end mb-4">
+                          <div className="flex bg-[#5A5A40]/5 rounded-full p-1 border border-[#5A5A40]/10">
+                            <button 
+                              onClick={cycleKondakMemLevel}
+                              className={`flex items-center gap-2 px-6 py-2 rounded-full font-sans text-xs font-bold uppercase tracking-widest transition-all ${
+                                kondakMemLevel > 0 
+                                ? 'bg-[#5A5A40] text-white shadow-lg' 
+                                : 'text-[#5A5A40] hover:bg-[#5A5A40]/10 border border-[#5A5A40]/20'
+                              }`}
+                            >
+                              <Eye size={16} /> УЧИТЬ (Ур.{kondakMemLevel})
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="bg-white rounded-[2.5rem] p-8 md:p-14 border border-[#5A5A40]/5 relative shadow-sm">
+                          <div className="text-center space-y-3 mb-10">
+                            <span className="text-[10px] font-sans font-bold uppercase tracking-[0.25em] text-[#5A5A40]/40 block">
+                              {selectedTroparion.kondak.glass}
+                            </span>
+                            <h2 className="text-3xl md:text-4xl font-black italic">Кондак</h2>
+                          </div>
+
+                          <div className="text-center text-2xl md:text-3xl leading-[1.6] space-y-4">
+                            {renderTextWithLevel(selectedTroparion.kondak.text, kondakMemLevel)}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Bottom Helper Bar */}
+                    {currentList.length > 1 && (
+                      <div className="flex items-center justify-between text-xs font-sans text-[#5A5A40]/50 pt-2 px-1 select-none">
+                        <button 
+                          onClick={goToPrev}
+                          className="flex items-center gap-1 font-bold hover:text-[#5A5A40] transition-colors py-2 px-3 rounded-xl hover:bg-[#5A5A40]/5"
+                        >
+                          <ChevronLeft size={16} /> Предыдущий
+                        </button>
+                        <span className="text-[11px] tracking-wider uppercase opacity-60">
+                          ← смахните для перелистывания →
+                        </span>
+                        <button 
+                          onClick={goToNext}
+                          className="flex items-center gap-1 font-bold hover:text-[#5A5A40] transition-colors py-2 px-3 rounded-xl hover:bg-[#5A5A40]/5"
+                        >
+                          Следующий <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Random Mode Actions */}
+                    {isRandomMode && (
+                      <div className="pt-6">
+                        <motion.button
+                          onClick={handleRandom}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="w-full bg-[#5A5A40] p-6 rounded-3xl text-white shadow-xl flex items-center justify-center gap-4 transition-all hover:brightness-110"
+                        >
+                          <Shuffle size={24} />
+                          <span className="text-lg font-bold">Другой тропарь</span>
+                        </motion.button>
+                        {usedRandomIds.length === allChants.length && (
+                          <p className="text-center text-[10px] uppercase tracking-widest text-[#5A5A40]/40 mt-4 font-sans font-bold">
+                            Все тексты просмотрены. Список обновлен.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
           )}
         </AnimatePresence>
       </main>
