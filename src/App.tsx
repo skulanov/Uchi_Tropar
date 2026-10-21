@@ -362,41 +362,16 @@ export default function App() {
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
             >
-              {/* Top Navigation Bar with Back, Pager, and Learn Button */}
-              <div className="flex items-center justify-between mb-4 gap-2">
+              {/* Top Navigation Bar with Back and Learn Button */}
+              <div className="flex items-center justify-between mb-4">
                 <button 
                   onClick={handleBack} 
-                  className="flex items-center gap-1.5 text-[#5A5A40] font-sans font-bold text-sm uppercase tracking-wider hover:opacity-80 transition-opacity shrink-0"
+                  className="flex items-center gap-1.5 text-[#5A5A40] font-sans font-bold text-sm uppercase tracking-wider hover:opacity-80 transition-opacity"
                 >
                   <ChevronLeft size={18} /> Назад
                 </button>
 
-                {/* Pager / Prev-Next Controls */}
-                {currentList.length > 1 && (
-                  <div className="flex items-center gap-1 text-xs font-sans font-bold text-[#5A5A40] bg-[#5A5A40]/5 px-2.5 py-1.5 rounded-full border border-[#5A5A40]/10 shadow-sm">
-                    <button 
-                      onClick={goToPrev} 
-                      aria-label="Предыдущий"
-                      title="Предыдущий (смахните вправо или клавиша ←)"
-                      className="p-1 hover:bg-[#5A5A40]/10 rounded-full transition-colors active:scale-90"
-                    >
-                      <ChevronLeft size={16} />
-                    </button>
-                    <span className="px-1.5 text-[11px] font-mono tracking-wider">
-                      {currentIndex + 1} / {currentList.length}
-                    </span>
-                    <button 
-                      onClick={goToNext} 
-                      aria-label="Следующий"
-                      title="Следующий (смахните влево или клавиша →)"
-                      className="p-1 hover:bg-[#5A5A40]/10 rounded-full transition-colors active:scale-90"
-                    >
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-                )}
-
-                <div className="flex bg-[#5A5A40]/5 rounded-full p-1 border border-[#5A5A40]/10 shrink-0">
+                <div className="flex bg-[#5A5A40]/5 rounded-full p-1 border border-[#5A5A40]/10">
                   <button 
                     onClick={cycleMemLevel}
                     className={`flex items-center gap-2 px-5 py-2 rounded-full font-sans text-xs font-bold uppercase tracking-widest transition-all ${
@@ -537,9 +512,6 @@ export default function App() {
                         >
                           <ChevronLeft size={16} /> Предыдущий
                         </button>
-                        <span className="text-[11px] tracking-wider uppercase opacity-60">
-                          ← смахните для перелистывания →
-                        </span>
                         <button 
                           onClick={goToNext}
                           className="flex items-center gap-1 font-bold hover:text-[#5A5A40] transition-colors py-2 px-3 rounded-xl hover:bg-[#5A5A40]/5"
